@@ -3,10 +3,10 @@ import telebot
 import pandas as pd
 
 #定义bot管理员的telegram userid
-admin_id = 你的TG ID
+admin_id = 你的TG_ID
 
 #定义bot
-bot = telebot.TeleBot('你的bot token')
+bot = telebot.TeleBot('你的BOT_TOKEN')
 
 #定义数据库
 conn = sqlite3.connect('My_sub.db', check_same_thread=False)
@@ -115,7 +115,7 @@ def help_sub(message):
     2. 删除数据：/delete 行数
     3. 查找数据：/search 内容
     4. 修改数据：/update 行数 订阅链接 备注
-    5. 导入xlsx表格：发送xlsx表格
+    5. 导入xlsx表格：发送xlsx表格(订阅备注的数字只能是整数！！！)
     '''
     bot.send_message(message.chat.id, doc)
 
