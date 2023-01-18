@@ -103,7 +103,7 @@ def callback_inline(call):
         row_num = call.data
         c.execute("SELECT rowid,URL,comment FROM My_sub WHERE rowid=?", (row_num,))
         result = c.fetchone()
-        bot.send_message(call.message.chat.id, '行号：{}\nURL：{}\ncomment：{}'.format(result[0], result[1], result[2]))
+        bot.send_message(call.message.chat.id, '行号：{}\nURL：{}\n备注：{}'.format(result[0], result[1], result[2]))
     else:
         bot.send_message(call.message.chat.id, "你没有操作权限，沙雕别瞎点！💩💩💩")
 
