@@ -1,147 +1,122 @@
-# 表格文件导入应该用pandas的，但我没有需求，懒得改
-import xlrd
 import sqlite3
 import telebot
+import pandas as pd
 
-# 初始化bot
-bot = telebot.TeleBot('<YOUR BOT TOKEN>')
+#定义bot管理员的telegram userid
+admin_id = 你的TG ID
 
-# 初始化数据库
+#定义bot
+bot = telebot.TeleBot('你的bot token')
+
+#定义数据库
 conn = sqlite3.connect('My_sub.db', check_same_thread=False)
-cursor = conn.cursor()
+c = conn.cursor()
 
-# 创建表
-cursor.execute("create table if not exists My_sub (url text, comment text)")
+#创建表
+c.execute('''CREATE TABLE IF NOT EXISTS My_sub(URL text, comment text)''')
 
-# 权限检查
-def auth_check(message):
-    if message.from_user.id == <YOUR TG ID>:
-        return True
+#接收用户输入的指令
+@bot.message_handler(commands=['add', 'delete', 'search', 'update', 'help'])
+def handle_command(message):
+    if message.from_user.id == admin_id:
+        command = message.text.split()[0]
+        if command == '/add':
+            add_sub(message)
+        elif command == '/delete':
+            delete_sub(message)
+        elif command == '/search':
+            search_sub(message)
+        elif command == '/update':
+            update_sub(message)
+        elif command == '/help':
+            help_sub(message)
     else:
-        bot.send_message(message.chat.id, '你无操作权限，私人bot，不支持非管理员的任何操作，沙雕别瞎点！')
-        return False
+        bot.send_message(message.chat.id, "你没有权限操作，请勿浪费时间！")
 
-# 增加数据
-@bot.message_handler(commands=['add'])
-def add_data(message):
-    if auth_check(message) == False:
-        return
-    data = message.text.split(' ')
-    if len(data) == 3:
-        url = data[1]
-        comment = data[2]
-        cursor.execute("select * from My_sub where url=?", (url,))
-        if len(cursor.fetchall()) == 0:
-            cursor.execute("insert into My_sub (url, comment) values (?, ?)", (url, comment))
-            conn.commit()
-            bot.send_message(message.chat.id, '添加成功！')
-        else:
-            bot.send_message(message.chat.id, '订阅已存在！')
+#添加数据
+def add_sub(message):
+    url_comment = message.text.split()[1:]
+    url = url_comment[0]
+    comment = url_comment[1]
+    c.execute("SELECT * FROM My_sub WHERE URL=?", (url,))
+    if c.fetchone():
+        bot.send_message(message.chat.id, "此订阅已存在！")
     else:
-        bot.send_message(message.chat.id, '输入格式有误！')
-
-# 删除数据
-@bot.message_handler(commands=['del'])
-def del_data(message):
-    if auth_check(message) == False:
-        return
-    data = message.text.split(' ')
-    if len(data) == 2:
-        line = data[1]
-        cursor.execute("delete from My_sub where rowid=?", (line,))
+        c.execute("INSERT INTO My_sub VALUES(?,?)", (url,comment))
         conn.commit()
-        bot.send_message(message.chat.id, '删除成功！')
-    else:
-        bot.send_message(message.chat.id, '输入格式有误！')
+        bot.send_message(message.chat.id, "添加成功！")
 
-# 查找数据
-@bot.message_handler(commands=['search'])
-def search_data(message):
-    if auth_check(message) == False:
-        return
-    data = message.text.split(' ')
-    if len(data) == 2:
-        content = data[1]
-        cursor.execute("select rowid, url, comment from My_sub where url like ? or comment like ?", ('%' + content + '%', '%' + content + '%'))
-        results = cursor.fetchall()
-        if len(results) == 0:
-            bot.send_message(message.chat.id, '没有查找到结果！')
-        elif len(results) == 1:
-            bot.send_message(message.chat.id, '行号：' + str(results[0][0]) + '\nURL：' + results[0][1] + '\n备注：' + results[0][2])
+#删除数据
+def delete_sub(message):
+    row_num = message.text.split()[1]
+    c.execute("DELETE FROM My_sub WHERE rowid=?", (row_num,))
+    conn.commit()
+    bot.send_message(message.chat.id, "删除成功！")
+
+#查找数据
+def search_sub(message):
+    search_str = message.text.split()[1]
+    c.execute("SELECT rowid,URL,comment FROM My_sub WHERE URL LIKE ? OR comment LIKE ?", ('%'+search_str+'%','%'+search_str+'%'))
+    result = c.fetchall()
+    if result:
+        if len(result) == 1:
+            bot.send_message(message.chat.id, '行号：{}\nURL：{}\ncomment：{}'.format(result[0][0], result[0][1], result[0][2]))
         else:
-            keyboard = telebot.types.InlineKeyboardMarkup()
-            for result in results:
-                keyboard.add(telebot.types.InlineKeyboardButton(text=result[2], callback_data=str(result[0])))
-            bot.send_message(message.chat.id, '请选择查询结果：', reply_markup=keyboard)
+            keyboard = []
+            for row in result:
+                keyboard.append([telebot.types.InlineKeyboardButton(row[2], callback_data=row[0])])
+            reply_markup = telebot.types.InlineKeyboardMarkup(keyboard)
+            bot.send_message(message.chat.id, '查找到以下结果，请点击查看：', reply_markup=reply_markup)
     else:
-        bot.send_message(message.chat.id, '输入格式有误！')
+        bot.send_message(message.chat.id, '没有查找到结果！')
 
-# 修改数据
-@bot.message_handler(commands=['update'])
-def modify_data(message):
-    if auth_check(message) == False:
-        return
-    data = message.text.split(' ')
-    if len(data) == 4:
-        line = int(data[1])
-        url = data[2]
-        comment = data[3]
-        cursor.execute("update My_sub set url=?, comment=? where rowid=?", (url, comment, line))
-        conn.commit()
-        bot.send_message(message.chat.id, '修改成功！')
-    else:
-        bot.send_message(message.chat.id, '输入格式有误！')
+#更新数据
+def update_sub(message):
+    row_num = message.text.split()[1]
+    url_comment = message.text.split()[2:]
+    url = url_comment[0]
+    comment = url_comment[1]
+    c.execute("UPDATE My_sub SET URL=?, comment=? WHERE rowid=?", (url,comment,row_num))
+    conn.commit()
+    bot.send_message(message.chat.id, "更新成功！")
 
-# 从excel导入数据
+#接收xlsx表格
 @bot.message_handler(content_types=['document'])
-def import_data(message):
-    if auth_check(message) == False:
-        return
-    if message.document.file_name.endswith('.xlsx'):
-        file_id = message.document.file_id
-        file_info = bot.get_file(file_id)
-        file = bot.download_file(file_info.file_path)
-        with open('tmp.xlsx', 'wb') as f:
-            f.write(file)
-        workbook = xlrd.open_workbook('tmp.xlsx')
-        sheet = workbook.sheet_by_index(0)
-        for row in range(1, sheet.nrows):
-            url = sheet.cell(row, 0).value
-            comment = sheet.cell(row, 1).value
-            cursor.execute("insert into My_sub (url, comment) values (?, ?)", (url, comment))
+def handle_document(message):
+    file_id = message.document.file_id
+    file_info = bot.get_file(file_id)
+    file = bot.download_file(file_info.file_path)
+    with open('sub.xlsx', 'wb') as f:
+        f.write(file)
+    df = pd.read_excel('sub.xlsx')
+    for i in range(len(df)):
+        c.execute("SELECT * FROM My_sub WHERE URL=?", (df.iloc[i,0],))
+        if not c.fetchone():
+            c.execute("INSERT INTO My_sub VALUES(?,?)", (df.iloc[i,0],df.iloc[i,1]))
             conn.commit()
-        bot.send_message(message.chat.id, '导入成功！')
+    bot.send_message(message.chat.id, "导入成功！")
+
+#按钮点击事件
+@bot.callback_query_handler(func=lambda call: True)
+def callback_inline(call):
+    if call.from_user.id == admin_id:
+        row_num = call.data
+        c.execute("SELECT rowid,URL,comment FROM My_sub WHERE rowid=?", (row_num,))
+        result = c.fetchone()
+        bot.send_message(call.message.chat.id, '行号：{}\nURL：{}\ncomment：{}'.format(result[0], result[1], result[2]))
     else:
-        bot.send_message(message.chat.id, '文件格式有误！')
+        bot.send_message(call.message.chat.id, "你没有操作权限，沙雕别瞎点！💩💩💩")
 
-# 打印结果
-@bot.callback_query_handler(func=lambda query: True)
-def print_result(query):
-    line = int(query.data)
-    cursor.execute("select rowid, url, comment from My_sub where rowid=?", (line,))
-    result = cursor.fetchone()
-    bot.send_message(query.message.chat.id, '行号：' + str(result[0]) + '\nURL：' + result[1] + '\n备注：' + result[2])
+#使用帮助
+def help_sub(message):
+    doc = '''
+    使用说明：
+    1. 添加数据：/add url 备注
+    2. 删除数据：/delete 行数
+    3. 查找数据：/search 内容
+    4. 修改数据：/update 行数 订阅链接 备注
+    5. 导入xlsx表格：发送xlsx表格
+    '''
+    bot.send_message(message.chat.id, doc)
 
-# 使用文档
-@bot.message_handler(commands=['help'])
-def help_doc(message):
-    if auth_check(message) == False:
-        return
-    else:
-        bot.send_message(message.chat.id, '''
-使用文档：
-
-/add url 备注：添加数据
-/del 行号：删除数据
-/search 内容：查找数据
-/update 行号 url 备注：修改数据
-/help：查看使用文档
-    ''')
-
-# 运行bot
-if __name__ == '__main__':
-    while True:
-        try:
-            bot.polling(none_stop=True)
-        except Exception as e:
-            time.sleep(15)
+bot.polling()
