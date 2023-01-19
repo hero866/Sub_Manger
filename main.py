@@ -123,7 +123,7 @@ def callback_inline(call):
             now_user = f" @{call.from_user.username} "
         else:
             now_user = f" tg://user?id={call.from_user.id} "
-        bot.send_message(call.message.chat.id, now_user + "💩💩💩你没有操作权限，沙雕别瞎点！💩💩💩")
+        bot.send_message(call.message.chat.id, now_user + "你没有操作权限，沙雕别瞎点！💩💩💩")
 
 
 # 使用帮助
