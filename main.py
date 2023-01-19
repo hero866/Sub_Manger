@@ -4,7 +4,7 @@ import pandas as pd
 import time
 
 #定义bot管理员的telegram userid
-admin_id = ['管理员tg_id', '管理员tg_id']
+admin_id = ['管理员1的TG_ID', '管理员2的TG_ID', '管理员3的TG_ID',]
 
 #定义bot
 bot = telebot.TeleBot('你的BOT_TOKEN')
@@ -68,7 +68,7 @@ def search_sub(message):
             for row in result:
                 keyboard.append([telebot.types.InlineKeyboardButton(row[2], callback_data=row[0])])
             reply_markup = telebot.types.InlineKeyboardMarkup(keyboard)
-            bot.reply_to(message, '卧槽，天降订阅🍻🍻🍻快点击查看(闲杂人等速速离场)：', reply_markup=reply_markup)
+            bot.reply_to(message, '卧槽，天降订阅🍻🍻🍻\n闲杂人等速速离场！快点击查看：', reply_markup=reply_markup)
     else:
         bot.reply_to(message, '没有查找到结果！')
 
@@ -86,18 +86,21 @@ def update_sub(message):
 #接收xlsx表格
 @bot.message_handler(content_types=['document'])
 def handle_document(message):
-    file_id = message.document.file_id
-    file_info = bot.get_file(file_id)
-    file = bot.download_file(file_info.file_path)
-    with open('sub.xlsx', 'wb') as f:
-        f.write(file)
-    df = pd.read_excel('sub.xlsx')
-    for i in range(len(df)):
-        c.execute("SELECT * FROM My_sub WHERE URL=?", (df.iloc[i,0],))
-        if not c.fetchone():
-            c.execute("INSERT INTO My_sub VALUES(?,?)", (df.iloc[i,0],df.iloc[i,1]))
-            conn.commit()
-    bot.reply_to(message, "导入成功！")
+    if str(message.from_user.id) in admin_id:
+        file_id = message.document.file_id
+        file_info = bot.get_file(file_id)
+        file = bot.download_file(file_info.file_path)
+        with open('sub.xlsx', 'wb') as f:
+            f.write(file)
+        df = pd.read_excel('sub.xlsx')
+        for i in range(len(df)):
+            c.execute("SELECT * FROM My_sub WHERE URL=?", (df.iloc[i,0],))
+            if not c.fetchone():
+                c.execute("INSERT INTO My_sub VALUES(?,?)", (df.iloc[i,0],df.iloc[i,1]))
+                conn.commit()
+        bot.reply_to(message, "导入成功！")
+    else:
+        bot.reply_to(message, "您不是管理员，禁止操作！")
 
 #按钮点击事件
 @bot.callback_query_handler(func=lambda call: True)
@@ -106,7 +109,7 @@ def callback_inline(call):
         row_num = call.data
         c.execute("SELECT rowid,URL,comment FROM My_sub WHERE rowid=?", (row_num,))
         result = c.fetchone()
-        bot.send_message(call.message.chat.id, '行号：{}\nURL：{}\n说明：{}'.format(result[0], result[1], result[2]))
+        bot.send_message(call.message.chat.id, '行号：{}\n订阅地址：{}\n说明：{}'.format(result[0], result[1], result[2]))
     else:
         if call.from_user.username is not None:
             now_user = f" @{call.from_user.username} "
