@@ -68,7 +68,7 @@ def search_sub(message):
             for row in result:
                 keyboard.append([telebot.types.InlineKeyboardButton(row[2], callback_data=row[0])])
             reply_markup = telebot.types.InlineKeyboardMarkup(keyboard)
-            bot.reply_to(message, '卧槽，天降订阅🍻🍻🍻\n闲杂人等速速离场！快点击查看：', reply_markup=reply_markup)
+            bot.reply_to(message, '卧槽，天降订阅🍻🍻🍻闲杂人等速速离场！\n快点击查看：', reply_markup=reply_markup)
     else:
         bot.reply_to(message, '没有查找到结果！')
 
