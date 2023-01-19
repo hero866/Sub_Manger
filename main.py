@@ -1,7 +1,7 @@
 import sqlite3
 import telebot
 import pandas as pd
-import time
+from time import sleep
 
 # 定义bot管理员的telegram userid
 admin_id = ['管理员1的TG_ID', '管理员2的TG_ID', '管理员3的TG_ID']
@@ -33,7 +33,7 @@ def handle_command(message):
         elif command == '/help':
             help_sub(message)
     else:
-        # bot.send_message(message.chat.id, "你没有操作权限，别瞎搞！")
+        # bot.send_message(message.chat.id, "❌你没有操作权限，别瞎搞！")
         bot.reply_to(message, "❌你没有操作权限，别瞎搞！")
 
 
@@ -44,7 +44,7 @@ def add_sub(message):
     comment = url_comment[1]
     c.execute("SELECT * FROM My_sub WHERE URL=?", (url,))
     if c.fetchone():
-        bot.reply_to(message, "😓此订阅已存在！")
+        bot.reply_to(message, "😅订阅已存在！")
     else:
         c.execute("INSERT INTO My_sub VALUES(?,?)", (url, comment))
         conn.commit()
@@ -56,7 +56,7 @@ def delete_sub(message):
     row_num = message.text.split()[1]
     c.execute("DELETE FROM My_sub WHERE rowid=?", (row_num,))
     conn.commit()
-    bot.reply_to(message, "👌删除成功！")
+    bot.reply_to(message, "✅删除成功！")
 
 
 # 查找数据
@@ -71,9 +71,9 @@ def search_sub(message):
             keyboard.append([telebot.types.InlineKeyboardButton(row[2], callback_data=row[0])])
         keyboard.append([telebot.types.InlineKeyboardButton('❎结束搜索', callback_data='close')])
         reply_markup = telebot.types.InlineKeyboardMarkup(keyboard)
-        bot.reply_to(message, '卧槽，天降订阅！！🙌天地三清，道法无敌，邪魔退让！🙌\n快点击查看⬇️', reply_markup=reply_markup)
+        bot.reply_to(message, '卧槽，天降订阅！！！快点击查看⏬', reply_markup=reply_markup)
     else:
-        bot.reply_to(message, '😓没有查找到结果！')
+        bot.reply_to(message, '😅没有查找到结果！')
 
 
 # 更新数据
@@ -84,7 +84,7 @@ def update_sub(message):
     comment = url_comment[1]
     c.execute("UPDATE My_sub SET URL=?, comment=? WHERE rowid=?", (url, comment, row_num))
     conn.commit()
-    bot.reply_to(message, "✍️更新成功！")
+    bot.reply_to(message, "✅更新成功！")
 
 
 # 接收xlsx表格
@@ -123,7 +123,7 @@ def callback_inline(call):
             now_user = f" @{call.from_user.username} "
         else:
             now_user = f" tg://user?id={call.from_user.id} "
-        bot.send_message(call.message.chat.id, now_user + "你没有管理权限，别点了！💩💩💩")
+        bot.send_message(call.message.chat.id, now_user + "你没有管理权限！天地三清，道法无敌，邪魔退让！👮‍♂️")
 
 
 # 使用帮助
@@ -145,4 +145,4 @@ if __name__ == '__main__':
         try:
             bot.polling(none_stop=True)
         except Exception as e:
-            time.sleep(15)
+            sleep(15)
