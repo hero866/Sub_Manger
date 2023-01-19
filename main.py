@@ -4,7 +4,7 @@ import pandas as pd
 import time
 
 #定义bot管理员的telegram userid
-admin_id = 你的TG_ID
+admin_id = ['管理员tg_id', '管理员tg_id']
 
 #定义bot
 bot = telebot.TeleBot('你的BOT_TOKEN')
@@ -19,7 +19,7 @@ c.execute('''CREATE TABLE IF NOT EXISTS My_sub(URL text, comment text)''')
 #接收用户输入的指令
 @bot.message_handler(commands=['add', 'delete', 'search', 'update', 'help'])
 def handle_command(message):
-    if message.from_user.id == admin_id:
+    if str(message.from_user.id) in admin_id:
         command = message.text.split()[0]
         if command == '/add':
             add_sub(message)
@@ -102,7 +102,7 @@ def handle_document(message):
 #按钮点击事件
 @bot.callback_query_handler(func=lambda call: True)
 def callback_inline(call):
-    if call.from_user.id == admin_id:
+    if str(call.from_user.id) in admin_id:
         row_num = call.data
         c.execute("SELECT rowid,URL,comment FROM My_sub WHERE rowid=?", (row_num,))
         result = c.fetchone()
