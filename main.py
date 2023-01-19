@@ -32,8 +32,8 @@ def handle_command(message):
         elif command == '/help':
             help_sub(message)
     else:
-        #bot.send_message(message.chat.id, "你没有权限操作，请勿浪费时间！")
-        bot.reply_to(message, "你没有权限操作，请勿浪费时间！")
+        #bot.send_message(message.chat.id, "你没有权限操作，别瞎搞！")
+        bot.reply_to(message, "你没有权限操作，别瞎搞！")
 
 #添加数据
 def add_sub(message):
@@ -68,7 +68,7 @@ def search_sub(message):
             for row in result:
                 keyboard.append([telebot.types.InlineKeyboardButton(row[2], callback_data=row[0])])
             reply_markup = telebot.types.InlineKeyboardMarkup(keyboard)
-            bot.reply_to(message, '卧槽，天降订阅🍻🍻🍻快点击查看：', reply_markup=reply_markup)
+            bot.reply_to(message, '卧槽，天降订阅🍻🍻🍻快点击查看(闲杂人等速速离场)：', reply_markup=reply_markup)
     else:
         bot.reply_to(message, '没有查找到结果！')
 
@@ -108,7 +108,11 @@ def callback_inline(call):
         result = c.fetchone()
         bot.send_message(call.message.chat.id, '行号：{}\nURL：{}\n说明：{}'.format(result[0], result[1], result[2]))
     else:
-        bot.send_message(call.message.chat.id, f"操！ @{call.from_user.username} ，你没有操作权限，沙雕别瞎点！💩💩💩")
+        if call.from_user.username is not None:
+            now_user = f" @{call.from_user.username} "
+        else:
+            now_user = f" tg://user?id={call.from_user.id} "
+        bot.send_message(call.message.chat.id, now_user + "你没有操作权限，沙雕别瞎点！💩💩💩")
 
 #使用帮助
 def help_sub(message):
