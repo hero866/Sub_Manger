@@ -33,7 +33,7 @@ def handle_command(message):
         elif command == '/help':
             help_sub(message)
     else:
-        # bot.send_message(message.chat.id, "你没有权限操作，别瞎搞！")
+        # bot.send_message(message.chat.id, "你没有操作权限，别瞎搞！")
         bot.reply_to(message, "❌你没有操作权限，别瞎搞！")
 
 
@@ -48,7 +48,7 @@ def add_sub(message):
     else:
         c.execute("INSERT INTO My_sub VALUES(?,?)", (url, comment))
         conn.commit()
-        bot.reply_to(message, "✍️添加成功！")
+        bot.reply_to(message, "✅添加成功！")
 
 
 # 删除数据
@@ -69,7 +69,7 @@ def search_sub(message):
         keyboard = []
         for row in result:
             keyboard.append([telebot.types.InlineKeyboardButton(row[2], callback_data=row[0])])
-        keyboard.append([telebot.types.InlineKeyboardButton('结束搜索', callback_data='close')])
+        keyboard.append([telebot.types.InlineKeyboardButton('❎结束搜索', callback_data='close')])
         reply_markup = telebot.types.InlineKeyboardMarkup(keyboard)
         bot.reply_to(message, '卧槽，天降订阅！！🙌天地三清，道法无敌，邪魔退让！🙌\n快点击查看⬇️', reply_markup=reply_markup)
     else:
@@ -102,7 +102,7 @@ def handle_document(message):
             if not c.fetchone():
                 c.execute("INSERT INTO My_sub VALUES(?,?)", (df.iloc[i, 0], df.iloc[i, 1]))
                 conn.commit()
-        bot.reply_to(message, "✍️导入成功！")
+        bot.reply_to(message, "✅导入成功！")
     else:
         bot.reply_to(message, "😡😡😡你不是管理员，禁止操作！")
 
@@ -123,7 +123,7 @@ def callback_inline(call):
             now_user = f" @{call.from_user.username} "
         else:
             now_user = f" tg://user?id={call.from_user.id} "
-        bot.send_message(call.message.chat.id, now_user + "你没有操作权限，沙雕别瞎点！💩💩💩")
+        bot.send_message(call.message.chat.id, now_user + "你没有管理权限，别点了！💩💩💩")
 
 
 # 使用帮助
@@ -134,7 +134,7 @@ def help_sub(message):
     2. 删除数据：/delete 行数
     3. 查找数据：/search 内容
     4. 修改数据：/update 行数 订阅链接 备注
-    5. 导入xlsx表格：发送xlsx表格（注意文件格式！！！A列为订阅地址，B列为对应的备注）
+    5. 导入xlsx表格：发送xlsx表格（注意文件格式！！！）
     '''
     bot.send_message(message.chat.id, doc)
 
