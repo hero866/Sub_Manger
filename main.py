@@ -117,21 +117,24 @@ def handle_document(message):
 # 按钮点击事件
 @bot.callback_query_handler(func=lambda call: True)
 def callback_inline(call):
-    if str(call.from_user.id) in admin_id:
-        if call.data == 'close':
-            bot.delete_message(call.message.chat.id, call.message.message_id)
+    try:
+        if str(call.from_user.id) in admin_id:
+            if call.data == 'close':
+                bot.delete_message(call.message.chat.id, call.message.message_id)
+            else:
+                row_num = call.data
+                c.execute("SELECT rowid,URL,comment FROM My_sub WHERE rowid=?", (row_num,))
+                result = c.fetchone()
+                bot.send_message(call.message.chat.id, '行号：{}\n订阅地址：{}\n说明：{}'.format(result[0], result[1], result[2]))
+                logger.debug(f"用户{call.from_user.id}从BOT获取了{result}")
         else:
-            row_num = call.data
-            c.execute("SELECT rowid,URL,comment FROM My_sub WHERE rowid=?", (row_num,))
-            result = c.fetchone()
-            bot.send_message(call.message.chat.id, '行号：{}\n订阅地址：{}\n说明：{}'.format(result[0], result[1], result[2]))
-            logger.debug(f"用户{call.from_user.id}从BOT获取了{result}")
-    else:
-        if call.from_user.username is not None:
-            now_user = f" @{call.from_user.username} "
-        else:
-            now_user = f" tg://user?id={call.from_user.id} "
-        bot.send_message(call.message.chat.id, now_user + "你没有管理权限！天地三清，道法无敌，邪魔退让！退！退！退！👮‍♂️")
+            if call.from_user.username is not None:
+                now_user = f" @{call.from_user.username} "
+            else:
+                now_user = f" tg://user?id={call.from_user.id} "
+            bot.send_message(call.message.chat.id, now_user + "你没有管理权限！天地三清，道法无敌，邪魔退让！退！退！退！👮‍♂️")
+    except TypeError:
+        bot.send_message(call.message.chat.id, "该订阅刚刚被删了，请尝试其他操作")
 
 
 # 使用帮助
