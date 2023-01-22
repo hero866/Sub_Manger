@@ -1,7 +1,7 @@
 import sqlite3
 import telebot
 import pandas as pd
-import time
+from time import sleep
 from loguru import logger
 
 # 1.22增加了日志功能，记录用户使用的指令和获取的订阅日志
@@ -134,7 +134,7 @@ def callback_inline(call):
                 now_user = f" tg://user?id={call.from_user.id} "
             bot.send_message(call.message.chat.id, now_user + "你没有管理权限！天地三清，道法无敌，邪魔退让！退！退！退！👮‍♂️")
     except TypeError:
-        bot.send_message(call.message.chat.id, "该订阅刚刚被删了，请尝试其他操作")
+        bot.send_message(call.message.chat.id, "😵😵这个订阅刚刚被其他管理员删了，请尝试其他操作")
 
 
 # 使用帮助
@@ -156,4 +156,4 @@ if __name__ == '__main__':
         try:
             bot.polling(none_stop=True)
         except RuntimeError as e:
-            time.sleep(30)
+            sleep(30)
