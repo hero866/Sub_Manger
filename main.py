@@ -6,7 +6,6 @@ from loguru import logger
 
 # 1.22增加了日志功能，记录用户使用的指令和获取的订阅日志
 logger.add('bot.log')
-logger.debug("output  debug message")
 
 # 定义bot管理员的telegram userid
 admin_id = ['管理员1的TG_ID', '管理员2的TG_ID', '管理员3的TG_ID']
@@ -154,7 +153,7 @@ def callback_inline(call):
                 now_user = f" tg://user?id={call.from_user.id} "
             bot.send_message(call.message.chat.id, now_user + "天地三清，道法无敌，邪魔退让！退！退！退！👮‍♂️")
     except DeprecationWarning:
-        bot.send_message(call.message.chat.id, "😵😵这个订阅刚刚被其他管理员删了，请尝试其他操作")
+        bot.send_message(call.message.chat.id, "😵😵这个订阅刚刚被别的管理员删了，请尝试其他操作")
 
 
 # 使用帮助
