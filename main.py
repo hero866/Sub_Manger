@@ -144,11 +144,14 @@ def callback_inline(call):
         if call.data == 'close':
             bot.delete_message(call.message.chat.id, call.message.message_id)
         else:
-            row_num = call.data
-            c.execute("SELECT rowid,URL,comment FROM My_sub WHERE rowid=?", (row_num,))
-            result = c.fetchone()
-            bot.send_message(call.message.chat.id, '*行号：*`{}`\n*订阅*：{}\n\n*说明*： `{}`'.format(result[0], result[1].replace("_", "\_"), result[2]), parse_mode='Markdown')
-            logger.debug(f"用户{call.from_user.id}从BOT获取了{result}")
+            try:
+                row_num = call.data
+                c.execute("SELECT rowid,URL,comment FROM My_sub WHERE rowid=?", (row_num,))
+                result = c.fetchone()
+                bot.send_message(call.message.chat.id, '*行号：*`{}`\n*订阅*：{}\n\n*说明*： `{}`'.format(result[0], result[1].replace("_", "\_"), result[2]), parse_mode='Markdown')
+                logger.debug(f"用户{call.from_user.id}从BOT获取了{result}")
+            except:
+                bot.send_message(call.message.chat.id, "😵😵这个订阅刚刚被别的管理员删了，请尝试其他操作")
     else:
         if call.from_user.username is not None:
             now_user = f" @{call.from_user.username} "
