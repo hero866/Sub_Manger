@@ -116,7 +116,7 @@ def update_sub(message):
 
 
 # 接收xlsx表格
-@bot.message_handler(content_types=['document'])
+@bot.message_handler(content_types=['document'], chat_types=['private'])
 def handle_document(message):
     if str(message.from_user.id) in admin_id:
         file_id = message.document.file_id
