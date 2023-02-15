@@ -23,7 +23,7 @@ c.execute('''CREATE TABLE IF NOT EXISTS My_sub(URL text, comment text)''')
 
 
 # 接收用户输入的指令
-@bot.message_handler(commands=['add', 'del', 'search', 'update', 'help'])
+@bot.message_handler(commands=['add', 'del', 'search', 'update'])
 def handle_command(message):
     if str(message.from_user.id) in admin_id:
         command = message.text.split()[0]
@@ -36,8 +36,6 @@ def handle_command(message):
             search_sub(message)
         elif command == '/update':
             update_sub(message)
-        elif command == '/help':
-            help_sub(message)
     else:
         # bot.send_message(message.chat.id, "你没有权限操作，别瞎搞！")
         bot.reply_to(message, "❌你没有操作权限，别瞎搞！")
@@ -165,9 +163,10 @@ def callback_inline(call):
 
 
 # 使用帮助
+@bot.message_handler(commands=['help'], chat_types=['private'])
 def help_sub(message):
     doc = '''
-    时间有限暂未做太多异常处理，请遵循使用说明的格式规则，否则程序可能出错,如果出现异常情况，联系 bot的主人 处理
+    时间有限暂未做太多异常处理，请遵循使用说明的格式规则，否则程序可能出错,如果出现异常情况，联系 @KKAA2222 处理
 🌈使用说明：
     1. 添加数据：/add url 备注
     2. 删除数据：/del 行数
@@ -176,6 +175,18 @@ def help_sub(message):
     5. 导入xlsx表格：发送xlsx表格（注意文件格式！A列为订阅地址，B列为对应的备注）
     '''
     bot.send_message(message.chat.id, doc)
+
+
+@bot.message_handler(commands=['start'], chat_types=['private'])
+def start(message):
+    if message.from_user.username is not None:
+        now_user = f" @{message.from_user.username} "
+    else:
+        now_user = f" tg://user?id={message.from_user.id} "
+    if str(message.from_user.id) in admin_id:
+        bot.send_message(message.chat.id, f"{now_user}同志您好，很高兴为您服务！")
+    else:
+        bot.send_message(message.chat.id, f"🈲{now_user}同志，您已闯入军事重地，请速速离开！")
 
 
 if __name__ == '__main__':
