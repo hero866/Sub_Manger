@@ -1,6 +1,8 @@
 # -*- coding: utf-8 -*-
 import sqlite3
 import telebot
+import shutil
+import os
 import pandas as pd
 from time import sleep
 from loguru import logger
@@ -9,7 +11,7 @@ from loguru import logger
 logger.add('bot.log')
 
 # 定义bot管理员的telegram userid
-admin_id = ['管理员1的TG_ID', '管理员2的TG_ID', '管理员3的TG_ID']
+admin_id = ['管理员1的TG_ID', '管理员1的TG_ID', '管理员1的TG_ID']
 
 # 定义bot
 bot = telebot.TeleBot('你的BOT_TOKEN')
@@ -166,7 +168,7 @@ def callback_inline(call):
 @bot.message_handler(commands=['help'], chat_types=['private'])
 def help_sub(message):
     doc = '''
-    时间有限暂未做太多异常处理，请遵循使用说明的格式规则，否则程序可能出错,如果出现异常情况，进入频道 @fffffx2 留言处理
+    时间有限暂未做太多异常处理，请遵循使用说明的格式规则，否则程序可能出错,如果出现异常情况，联系 @KKAA2222 处理
 🌈使用说明：
     1. 添加数据：/add url 备注
     2. 删除数据：/del 行数
@@ -187,6 +189,29 @@ def start(message):
         bot.send_message(message.chat.id, f"{now_user}同志您好，很高兴为您服务！")
     else:
         bot.send_message(message.chat.id, f"🈲{now_user}同志，您已闯入军事重地，请速速离开！")
+
+
+# 2.19增加了数据库备份功能，【注意核对数据库主人的TG_ID！！！】
+@bot.message_handler(commands=['backup'], chat_types=['private'])
+def backup_database(message):
+    if message.from_user.id == 数据库主人的TG_ID:
+        try:
+            backup_dir = 'backup'
+            if not os.path.exists(backup_dir):
+                os.makedirs(backup_dir)
+            backup_file = os.path.join(backup_dir, 'My_sub_backup.db')
+            shutil.copyfile('My_sub.db', backup_file)
+            with open(backup_file, 'rb') as file:
+                bot.send_document(message.chat.id, file)
+            for file in os.listdir(backup_dir):
+                if file != 'My_sub_backup.db':
+                    os.remove(os.path.join(backup_dir, file))
+            bot.reply_to(message, '✅数据库备份完成')
+            logger.debug(f"用户{message.from_user.id}备份了数据库")
+        except Exception as t:
+            bot.reply_to(message, f'⚠️出现问题了，报错内容为: {t}')
+    else:
+        bot.reply_to(message, '🈲住手！这不是你该做的事！')
 
 
 if __name__ == '__main__':
