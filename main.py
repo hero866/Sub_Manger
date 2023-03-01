@@ -185,7 +185,7 @@ def start(message):
     if message.from_user.username is not None:
         now_user = f" @{message.from_user.username} "
     else:
-        now_user = f" tg://user?id={message.from_user.id} "
+        now_user = f"<a href=\"tg://user?id={message.from_user.id}\">{message.from_user.id}</a>"
     if str(message.from_user.id) in admin_id:
         bot.send_message(message.chat.id, f"{now_user}同志您好，很高兴为您服务！")
     else:
