@@ -12,7 +12,7 @@ logger.add('bot.log')
 
 # 定义bot管理员的telegram userid
 admin_id = ['管理员1的TG_ID', '管理员2的TG_ID', '管理员3的TG_ID']
-super_admin = '数据库主人的TG_ID'
+super_admin = '超级管理员的TG_ID'
 
 # 定义bot
 bot = telebot.TeleBot('你的BOT_TOKEN')
@@ -40,6 +40,7 @@ def handle_command(message):
         elif command == '/update':
             update_sub(message)
     else:
+        # bot.send_message(message.chat.id, "你没有权限操作，别瞎搞！")
         bot.reply_to(message, "❌你没有操作权限，别瞎搞！")
 
 
@@ -160,8 +161,8 @@ def callback_inline(call):
         if call.from_user.username is not None:
             now_user = f" @{call.from_user.username} "
         else:
-            now_user = f" tg://user?id={call.from_user.id} "
-        bot.send_message(call.message.chat.id, now_user + "天地三清，道法无敌，邪魔退让！退！退！退！👮‍♂️")
+            now_user = f"<a href=\"tg://user?id={call.from_user.id}\">{call.from_user.id}</a>"
+        bot.send_message(call.message.chat.id, f"{now_user}天地三清，道法无敌，邪魔退让！退！退！退！👮‍♂️", parse_mode='HTML')
 
 
 # 使用帮助
