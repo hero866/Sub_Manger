@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+#  目前已知问题：多用户同时操作时，当某一用户变更数据库内容时，其他用户的搜索结果不会同步更新，只能重新查找
 import sqlite3
 import telebot
 import shutil
@@ -7,11 +8,11 @@ import pandas as pd
 from time import sleep
 from loguru import logger
 
-# 1.22增加了日志功能，记录用户使用的指令和获取的订阅日志
+# 2023/01/22增加日志功能，记录用户使用的指令和获取的订阅日志
 logger.add('bot.log')
 
 # 定义bot管理员的telegram userid
-admin_id = ['管理员1的TG_ID', '管理员2的TG_ID', '管理员3的TG_ID']
+admin_id = ['管理员1的TG_ID', '管理员1的TG_ID', '管理员1的TG_ID']
 super_admin = '超级管理员的TG_ID'
 
 # 定义bot
@@ -40,7 +41,6 @@ def handle_command(message):
         elif command == '/update':
             update_sub(message)
     else:
-        # bot.send_message(message.chat.id, "你没有权限操作，别瞎搞！")
         bot.reply_to(message, "❌你没有操作权限，别瞎搞！")
 
 
@@ -76,31 +76,110 @@ def delete_sub(message):
         bot.send_message(message.chat.id, "😵😵输入格式有误，请检查后重新输入")
 
 
-# 查找数据
+# 查找数据，2023/03/12增加翻页功能
+items_per_page = 10
+result = None
+callbacks = {}
+
+
 def search_sub(message):
+    global items_per_page, total, result, current_page
     try:
         search_str = message.text.split()[1]
         c.execute("SELECT rowid,URL,comment FROM My_sub WHERE URL LIKE ? OR comment LIKE ?",
                   ('%' + search_str + '%', '%' + search_str + '%'))
         result = c.fetchall()
         if result:
+            pages = [result[i:i + items_per_page] for i in range(0, len(result), items_per_page)]
+            total = len(pages)
+            current_page = 1
+            current_items = pages[current_page - 1]
             keyboard = []
-            for i in range(0, len(result), 2):
-                row = result[i:i + 2]
-                keyboard_row = []
-                for item in row:
-                    button = telebot.types.InlineKeyboardButton(item[2], callback_data=item[0])
-                    keyboard_row.append(button)
-                keyboard.append(keyboard_row)
-            total = len(result)
+            for item in current_items:
+                button = telebot.types.InlineKeyboardButton(item[2], callback_data=item[0])
+                keyboard.append([button])
+            if total > 1:
+                page_info = f'第 {current_page}/{total} 页'
+                prev_button = telebot.types.InlineKeyboardButton('上一页', callback_data='prev')
+                next_button = telebot.types.InlineKeyboardButton('下一页', callback_data='next')
+                page_button = telebot.types.InlineKeyboardButton(page_info, callback_data='page_info')
+                page_buttons = [prev_button, page_button, next_button]
+                keyboard.append(page_buttons)
             keyboard.append([telebot.types.InlineKeyboardButton('❎结束搜索', callback_data='close')])
             reply_markup = telebot.types.InlineKeyboardMarkup(keyboard)
-            bot.reply_to(message, f'卧槽，天降订阅🎁发现了{str(total)}个目标，快点击查看⏬', reply_markup=reply_markup)
+            sent_message = bot.reply_to(message, f'卧槽，天降订阅🎁发现了{str(len(result))}个目标，快点击查看⏬', reply_markup=reply_markup)
+            global sent_message_id
+            sent_message_id = sent_message.message_id
+            user_id = message.from_user.id
+            callbacks[user_id] = {'total': total, 'current_page': current_page, 'result': result, 'sent_message_id': sent_message_id}
         else:
             bot.reply_to(message, '😅没有查找到结果！')
     except Exception as t:
         print(t)
         bot.send_message(message.chat.id, "😵😵您输入的内容有误，请检查后重新输入")
+
+
+def update_buttons(callback_query, user_id):
+    global callbacks
+    callback_data = callback_query.data
+    message = callback_query.message
+    message_id = message.message_id
+    current_page = callbacks[user_id]['current_page']
+    total = callbacks[user_id]['total']
+    result = callbacks[user_id]['result']
+    if callback_data == 'prev' and current_page > 1:
+        current_page -= 1
+    elif callback_data == 'next' and current_page < total:
+        current_page += 1
+    pages = [result[i:i + items_per_page] for i in range(0, len(result), items_per_page)]
+    current_items = pages[current_page - 1]
+    bot.edit_message_reply_markup(chat_id=message.chat.id, message_id=message_id, reply_markup=None)
+    keyboard = []
+    for item in current_items:
+        button = telebot.types.InlineKeyboardButton(item[2], callback_data=item[0])
+        keyboard.append([button])
+    if total > 1:
+        page_info = f'第 {current_page}/{total} 页'
+        prev_button = telebot.types.InlineKeyboardButton('上一页', callback_data='prev')
+        next_button = telebot.types.InlineKeyboardButton('下一页', callback_data='next')
+        page_button = telebot.types.InlineKeyboardButton(page_info, callback_data='page_info')
+        page_buttons = [prev_button, page_button, next_button]
+        keyboard.append(page_buttons)
+    keyboard.append([telebot.types.InlineKeyboardButton('❎结束搜索', callback_data='close')])
+    reply_markup = telebot.types.InlineKeyboardMarkup(keyboard)
+    bot.edit_message_reply_markup(chat_id=message.chat.id, message_id=message_id, reply_markup=reply_markup)
+    callbacks[user_id]['current_page'] = current_page
+
+
+@bot.callback_query_handler(func=lambda call: True)
+def callback_inline(call):
+    global sent_message_id, current_page, callbacks
+    user_id = call.from_user.id
+    if str(user_id) in admin_id:
+        if call.data == 'close':
+            delete_result = bot.delete_message(call.message.chat.id, call.message.message_id)
+            if delete_result is None:
+                sent_message_id = None
+        elif call.data == 'prev' or call.data == 'next':
+            if user_id in callbacks:
+                update_buttons(call, user_id)
+        elif call.data == 'page_info':
+            pass
+        else:
+            try:
+                row_num = call.data
+                c.execute("SELECT rowid,URL,comment FROM My_sub WHERE rowid=?", (row_num,))
+                result = c.fetchone()
+                bot.send_message(call.message.chat.id, '*行号：*`{}`\n*订阅*：{}\n\n*说明*： `{}`'.format(result[0], result[1].replace("_", "\_"), result[2]), parse_mode='Markdown')
+                logger.debug(f"用户{call.from_user.id}从BOT获取了{result}")
+            except TypeError as t:
+                bot.send_message(call.message.chat.id, f"😵😵发生错误\n{t}")
+    else:
+        if call.from_user.username is not None:
+            now_user = f" @{call.from_user.username} "
+        else:
+            now_user = f"<a href=\"tg://user?id={call.from_user.id}\">{call.from_user.id}</a>"
+        bot.send_message(call.message.chat.id, f"{now_user}天地三清，道法无敌，邪魔退让！退！退！退！👮‍♂️", parse_mode='HTML')
 
 
 # 更新数据
@@ -142,34 +221,11 @@ def handle_document(message):
         bot.reply_to(message, "😡😡😡你不是管理员，禁止操作！")
 
 
-# 按钮点击事件
-@bot.callback_query_handler(func=lambda call: True)
-def callback_inline(call):
-    if str(call.from_user.id) in admin_id:
-        if call.data == 'close':
-            bot.delete_message(call.message.chat.id, call.message.message_id)
-        else:
-            try:
-                row_num = call.data
-                c.execute("SELECT rowid,URL,comment FROM My_sub WHERE rowid=?", (row_num,))
-                result = c.fetchone()
-                bot.send_message(call.message.chat.id, '*行号：*`{}`\n*订阅*：{}\n\n*说明*： `{}`'.format(result[0], result[1].replace("_", "\_"), result[2]), parse_mode='Markdown')
-                logger.debug(f"用户{call.from_user.id}从BOT获取了{result}")
-            except TypeError as t:
-                bot.send_message(call.message.chat.id, f"😵😵发生错误\n{t}")
-    else:
-        if call.from_user.username is not None:
-            now_user = f" @{call.from_user.username} "
-        else:
-            now_user = f"<a href=\"tg://user?id={call.from_user.id}\">{call.from_user.id}</a>"
-        bot.send_message(call.message.chat.id, f"{now_user}天地三清，道法无敌，邪魔退让！退！退！退！👮‍♂️", parse_mode='HTML')
-
-
 # 使用帮助
 @bot.message_handler(commands=['help'], chat_types=['private'])
 def help_sub(message):
     doc = '''
-    时间有限暂未做太多异常处理，请遵循使用说明的格式规则，否则程序可能出错,如果出现异常情况，联系 @KKAA2222 处理
+    时间有限暂未做太多异常处理，请遵循使用说明的格式规则，否则程序可能出错，如果出现异常情况，联系 @KKAA2222 处理
 🌈使用说明：
     1. 添加数据：/add url 备注
     2. 删除数据：/del 行数
