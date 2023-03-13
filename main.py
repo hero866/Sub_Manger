@@ -1,5 +1,4 @@
 # -*- coding: utf-8 -*-
-#  目前已知问题：多用户同时操作时，当某一用户变更数据库内容时，其他用户的搜索结果不会同步更新，只能重新查找
 import sqlite3
 import telebot
 import shutil
@@ -8,11 +7,11 @@ import pandas as pd
 from time import sleep
 from loguru import logger
 
-# 2023/01/22增加日志功能，记录用户使用的指令和获取的订阅日志
+# 1.22增加了日志功能，记录用户使用的指令和获取的订阅日志
 logger.add('bot.log')
 
 # 定义bot管理员的telegram userid
-admin_id = ['管理员1的TG_ID', '管理员1的TG_ID', '管理员1的TG_ID']
+admin_id = ['管理员1的TG_ID', '管理员2的TG_ID', '管理员3的TG_ID']
 super_admin = '超级管理员的TG_ID'
 
 # 定义bot
@@ -76,7 +75,7 @@ def delete_sub(message):
         bot.send_message(message.chat.id, "😵😵输入格式有误，请检查后重新输入")
 
 
-# 2023/03/12查找数据，出现多条结果时，修改为分页展示
+# 查找数据
 items_per_page = 10
 result = None
 callbacks = {}
@@ -100,8 +99,8 @@ def search_sub(message):
                 keyboard.append([button])
             if total > 1:
                 page_info = f'第 {current_page}/{total} 页'
-                prev_button = telebot.types.InlineKeyboardButton('上一页', callback_data='prev')
-                next_button = telebot.types.InlineKeyboardButton('下一页', callback_data='next')
+                prev_button = telebot.types.InlineKeyboardButton('◀️上一页', callback_data='prev')
+                next_button = telebot.types.InlineKeyboardButton('下一页▶️', callback_data='next')
                 page_button = telebot.types.InlineKeyboardButton(page_info, callback_data='page_info')
                 page_buttons = [prev_button, page_button, next_button]
                 keyboard.append(page_buttons)
@@ -140,8 +139,8 @@ def update_buttons(callback_query, user_id):
         keyboard.append([button])
     if total > 1:
         page_info = f'第 {current_page}/{total} 页'
-        prev_button = telebot.types.InlineKeyboardButton('上一页', callback_data='prev')
-        next_button = telebot.types.InlineKeyboardButton('下一页', callback_data='next')
+        prev_button = telebot.types.InlineKeyboardButton('◀️上一页', callback_data='prev')
+        next_button = telebot.types.InlineKeyboardButton('下一页▶️', callback_data='next')
         page_button = telebot.types.InlineKeyboardButton(page_info, callback_data='page_info')
         page_buttons = [prev_button, page_button, next_button]
         keyboard.append(page_buttons)
