@@ -174,11 +174,10 @@ def callback_inline(call):
             except TypeError as t:
                 bot.send_message(call.message.chat.id, f"😵😵发生错误\n{t}")
     else:
-        if call.from_user.username is not None:
-            now_user = f" @{call.from_user.username} "
-        else:
-            now_user = f"<a href=\"tg://user?id={call.from_user.id}\">{call.from_user.id}</a>"
-        bot.send_message(call.message.chat.id, f"{now_user}天地三清，道法无敌，邪魔退让！退！退！退！👮‍♂️", parse_mode='HTML')
+        try:
+            bot.answer_callback_query(call.id, f"天地三清，道法无敌，邪魔避让！\n\n🈲‍", show_alert=True)
+        except:
+            pass
 
 
 # 更新数据
