@@ -30,7 +30,7 @@ c.execute('''CREATE TABLE IF NOT EXISTS My_sub(URL text, comment text)''')
 def handle_command(message):
     if str(message.from_user.id) in admin_id:
         command = message.text.split()[0]
-        logger.debug(f"用户{message.from_user.id}使用了{command}功能")
+        logger.debug(f"用户{message.from_user.first_name}使用了{command}功能")
         if command == '/add':
             add_sub(message)
         elif command == '/del':
@@ -176,7 +176,7 @@ def callback_inline(call):
                 c.execute("SELECT rowid,URL,comment FROM My_sub WHERE rowid=?", (row_num,))
                 result = c.fetchone()
                 bot.send_message(call.message.chat.id, '*行号：*`{}`\n*订阅*：{}\n\n*说明*： `{}`'.format(result[0], result[1].replace("_", "\_"), result[2]), parse_mode='Markdown')
-                logger.debug(f"用户{call.from_user.id}从BOT获取了{result}")
+                logger.debug(f"用户{call.from_user.first_name}从BOT获取了{result}")
             except TypeError as t:
                 bot.send_message(call.message.chat.id, f"😵😵发生错误\n{t}")
     else:
