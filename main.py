@@ -132,7 +132,7 @@ def update_buttons(callback_query, user_id):
         current_page += 1
     pages = [result[i:i + items_per_page] for i in range(0, len(result), items_per_page)]
     current_items = pages[current_page - 1]
-    bot.edit_message_reply_markup(chat_id=message.chat.id, message_id=message_id, reply_markup=None)
+    # bot.edit_message_reply_markup(chat_id=message.chat.id, message_id=message_id, reply_markup=None)
     keyboard = []
     for item in current_items:
         button = telebot.types.InlineKeyboardButton(item[2], callback_data=item[0])
